@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import CoinChart from "./CoinChart"; // Chart.js grafiği
-import CoinChart from "./CoinChart"; // src ile aynı dizinde olduğundan ./CoinChart
-
+import CoinChart from "./CoinChart";
 
 import btcLogo from "./assets/icons/btc.png";
 import ethLogo from "./assets/icons/etherium.png";
@@ -30,67 +28,61 @@ function App() {
   const [selectedCoin, setSelectedCoin] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [rangeDays, setRangeDays] = useState(null);
+  const [rangeDays, setRangeDays] = useState("30"); 
   const [stats, setStats] = useState(null);
 
   const coins = ["BTC", "ETH", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
 
-  
-  const fetchCoinData = async (coin, period = null) => {
+  const fetchCoinData = async (coin, period = "30") => {
     try {
       setLoading(true);
       const res = await axios.get(
-        `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
-        {
-          params: {
-            coinName: coin,
-            period: period,
-            minPrice: null,
-            maxPrice: null,
-            sortColumn: "Date",
-            sortOrder: "asc",
-          },
-        }
-      );
+  `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
+  {
+    params: {
+      coinName: coin,
+      period: period, // string olarak gönder
+      minPrice: null,
+      maxPrice: null,
+      sortColumn: "date", // backend JSON alanına uygun
+      sortOrder: "asc",
+    },
+  }
+);
+
+console.log("Backendden gelen veri:", res.data);
 
       const coinData = Array.isArray(res.data) ? res.data : [];
       setData((prev) => ({ ...prev, [coin]: coinData }));
 
-      
       if (coinData.length > 0) {
-        const dates = coinData.map((d) => new Date(d.Date));
+        const dates = coinData.map((d) => new Date(d.date));
         setStartDate(new Date(Math.min(...dates)));
         setEndDate(new Date(Math.max(...dates)));
-      }
-
-      
-      if (coinData.length > 0) {
-        const stats = calculateStats(coinData);
-        setStats(stats);
+        setStats(calculateStats(coinData));
       } else {
         setStats(null);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
+      setData((prev) => ({ ...prev, [coin]: [] }));
+      setStats(null);
     } finally {
       setLoading(false);
     }
   };
 
-  
   const calculateStats = (coinData) => {
     if (!coinData || coinData.length === 0) return null;
-
     let highestAvgDiff = 0;
-    let lowestPrice = coinData[0].close;
-    let highestPrice = coinData[0].close;
+    let lowestPrice = coinData[0].price;
+    let highestPrice = coinData[0].price;
 
     coinData.forEach((d) => {
-      const diff = Math.abs(d.open - d.close);
+      const diff = Math.abs(d.open - d.price);
       if (diff > highestAvgDiff) highestAvgDiff = diff;
-
-      if (d.close < lowestPrice) lowestPrice = d.close;
-      if (d.close > highestPrice) highestPrice = d.close;
+      if (d.price < lowestPrice) lowestPrice = d.price;
+      if (d.price > highestPrice) highestPrice = d.price;
     });
 
     return { highestAvgDiff, lowestPrice, highestPrice };
@@ -98,10 +90,9 @@ function App() {
 
   const handleCoinClick = (coin) => {
     setSelectedCoin(coin);
-    fetchCoinData(coin, null); 
+    fetchCoinData(coin, rangeDays);
   };
 
-  
   useEffect(() => {
     if (selectedCoin && rangeDays) {
       fetchCoinData(selectedCoin, rangeDays);
@@ -131,9 +122,7 @@ function App() {
                 cursor: "pointer",
               }}
             >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "10px" }}
-              >
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <img src={coinLogos[coin]} alt={coin} width="40" height="40" />
                 <h2>{coin}</h2>
               </div>
@@ -176,7 +165,6 @@ function App() {
             </div>
           </div>
 
-          {/*Butonlar */}
           <div
             style={{
               marginBottom: "20px",
@@ -185,7 +173,7 @@ function App() {
               alignItems: "center",
             }}
           >
-            {[7, 30, 90].map((d) => (
+            {["7", "30", "90"].map((d) => (
               <button
                 key={d}
                 onClick={() => setRangeDays(d)}
@@ -202,7 +190,6 @@ function App() {
             ))}
           </div>
 
-          {/* İstatistikler */}
           {stats && (
             <div style={{ marginBottom: "20px" }}>
               <p>En yüksek ortalama fark: {stats.highestAvgDiff}</p>
@@ -211,11 +198,12 @@ function App() {
             </div>
           )}
 
-          {/* Grafik */}
           {loading ? (
             <h3>Loading...</h3>
-          ) : (
+          ) : data[selectedCoin] && data[selectedCoin].length > 0 ? (
             <CoinChart data={data[selectedCoin]} />
+          ) : (
+            <h3>No data to display</h3>
           )}
         </div>
       )}
