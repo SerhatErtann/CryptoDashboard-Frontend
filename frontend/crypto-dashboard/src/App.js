@@ -28,8 +28,63 @@ function App() {
   const [selectedCoin, setSelectedCoin] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [rangeDays, setRangeDays] = useState("30"); 
+  const [rangeDays, setRangeDays] = useState(null);
   const [stats, setStats] = useState(null);
+  const [minPrice, setMinPrice] = useState(null);
+  const [maxPrice, setMaxPrice] = useState(null);
+  const [filteredData, setFilteredData] = useState([]);
+
+  const handleStartDateChange = (date) => {
+  if (!date) return;
+  setStartDate(date);
+};
+
+const handleEndDateChange = (date) => {
+  if (!date) return;
+  setEndDate(date);
+};
+  const getFilteredData = () => {
+    if (!data[selectedCoin]) return [];
+
+    return data[selectedCoin].filter((d) => {
+    const dt = new Date(d.date);
+    dt.setHours(0, 0, 0, 0); 
+    
+
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+    if (start) start.setHours(0, 0, 0, 0);
+    if (end) end.setHours(0, 0, 0, 0);
+
+    const dateInRange =
+      (start ? dt >= start : true) &&
+      (end ? dt <= end : true);
+
+    const priceInRange =
+      (minPrice === null || d.price >= minPrice) &&
+      (maxPrice === null || d.price <= maxPrice);
+
+    return dateInRange && priceInRange;
+  });
+};
+
+  const formatDate = (dateString) => {
+    const d = new Date(dateString);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const coinColors = {
+    BTC: "#f7931a33",
+    ETH: "#3c3c3d33",
+    LITECOIN: "#bebebe33",
+    SOLANA: "#00FFA333",
+    ETC: "#6993ff33",
+    ELROND: "#00c2a833",
+    AAVE: "#b6509e33",
+  };
 
   const coins = ["BTC", "ETH", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
 
@@ -37,29 +92,32 @@ function App() {
     try {
       setLoading(true);
       const res = await axios.get(
-  `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
-  {
-    params: {
-      coinName: coin,
-      period: period, // string olarak gönder
-      minPrice: null,
-      maxPrice: null,
-      sortColumn: "date", // backend JSON alanına uygun
-      sortOrder: "asc",
-    },
-  }
-);
-
-console.log("Backendden gelen veri:", res.data);
+        `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
+        {
+          params: {
+            coinName: coin,
+            period: period,
+            minPrice: minPrice || null,
+            maxPrice: maxPrice || null,
+            sortColumn: "date",
+            sortOrder: "asc",
+          },
+        }
+      );
 
       const coinData = Array.isArray(res.data) ? res.data : [];
-      setData((prev) => ({ ...prev, [coin]: coinData }));
+      const formattedCoinData = coinData.map((d) => ({
+        ...d,
+        date: formatDate(d.date),
+      }));
 
-      if (coinData.length > 0) {
-        const dates = coinData.map((d) => new Date(d.date));
+      setData((prev) => ({ ...prev, [coin]: formattedCoinData }));
+
+      if (formattedCoinData.length > 0) {
+        const dates = formattedCoinData.map((d) => new Date(d.date));
         setStartDate(new Date(Math.min(...dates)));
         setEndDate(new Date(Math.max(...dates)));
-        setStats(calculateStats(coinData));
+        setStats(calculateStats(formattedCoinData));
       } else {
         setStats(null);
       }
@@ -74,18 +132,18 @@ console.log("Backendden gelen veri:", res.data);
 
   const calculateStats = (coinData) => {
     if (!coinData || coinData.length === 0) return null;
-    let highestAvgDiff = 0;
+    let totalDiff = 0;
     let lowestPrice = coinData[0].price;
     let highestPrice = coinData[0].price;
 
     coinData.forEach((d) => {
       const diff = Math.abs(d.open - d.price);
-      if (diff > highestAvgDiff) highestAvgDiff = diff;
+      totalDiff += diff;
       if (d.price < lowestPrice) lowestPrice = d.price;
       if (d.price > highestPrice) highestPrice = d.price;
     });
-
-    return { highestAvgDiff, lowestPrice, highestPrice };
+    const averageDiff = totalDiff / coinData.length;
+    return { averageDiff, lowestPrice, highestPrice };
   };
 
   const handleCoinClick = (coin) => {
@@ -94,10 +152,10 @@ console.log("Backendden gelen veri:", res.data);
   };
 
   useEffect(() => {
-    if (selectedCoin && rangeDays) {
-      fetchCoinData(selectedCoin, rangeDays);
+    if (selectedCoin && data[selectedCoin]) {
+      setFilteredData(getFilteredData());
     }
-  }, [rangeDays, selectedCoin]);
+  }, [startDate, endDate, data, selectedCoin]);
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
@@ -116,17 +174,37 @@ console.log("Backendden gelen veri:", res.data);
               key={coin}
               onClick={() => handleCoinClick(coin)}
               style={{
-                border: "1px solid #ddd",
-                padding: "15px",
-                borderRadius: "10px",
+                borderRadius: "15px",
                 cursor: "pointer",
+                textAlign: "center",
+                padding: "20px",
+                backgroundColor: coinColors[coin],
+                boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+                transition: "transform 0.2s",
               }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.transform = "scale(1.05)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.transform = "scale(1)")
+              }
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "10px",
+                }}
+              >
                 <img src={coinLogos[coin]} alt={coin} width="40" height="40" />
                 <h2>{coin}</h2>
               </div>
-              <p>Click to view details</p>
+              <p
+                style={{ color: "#555", fontSize: "14px", margin: "10px 0" }}
+              >
+                Click for price and detailed statistical information.
+              </p>
             </div>
           ))}
         </div>
@@ -148,19 +226,42 @@ console.log("Backendden gelen veri:", res.data);
 
           <h2>{selectedCoin} Details</h2>
 
-          <div style={{ marginBottom: "20px", display: "flex", gap: "20px" }}>
+          <div
+            style={{ marginBottom: "20px", display: "flex", gap: "20px" }}
+          >
             <div>
               <label>Start Date: </label>
               <DatePicker
-                selected={startDate}
-                onChange={(date) => setStartDate(date)}
-              />
+  selected={startDate}
+  onChange={(date) => setStartDate(date)}
+  dateFormat="yyyy-MM-dd"
+/>
             </div>
             <div>
               <label>End Date: </label>
               <DatePicker
-                selected={endDate}
-                onChange={(date) => setEndDate(date)}
+  selected={endDate}
+  onChange={(date) => setEndDate(date)}
+  dateFormat="yyyy-MM-dd"
+/>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: "20px", display: "flex", gap: "20px" }}>
+            <div>
+              <label>Min Price: </label>
+              <input
+                type="number"
+                value={minPrice || ""}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+            </div>
+            <div>
+              <label>Max Price: </label>
+              <input
+                type="number"
+                value={maxPrice || ""}
+                onChange={(e) => setMaxPrice(e.target.value)}
               />
             </div>
           </div>
@@ -192,7 +293,7 @@ console.log("Backendden gelen veri:", res.data);
 
           {stats && (
             <div style={{ marginBottom: "20px" }}>
-              <p>En yüksek ortalama fark: {stats.highestAvgDiff}</p>
+              <p>En yüksek ortalama fark: {stats.averageDiff.toFixed(2)}</p>
               <p>En düşük fiyat: {stats.lowestPrice}</p>
               <p>En yüksek fiyat: {stats.highestPrice}</p>
             </div>
@@ -201,7 +302,7 @@ console.log("Backendden gelen veri:", res.data);
           {loading ? (
             <h3>Loading...</h3>
           ) : data[selectedCoin] && data[selectedCoin].length > 0 ? (
-            <CoinChart data={data[selectedCoin]} />
+            <CoinChart data={filteredData} />
           ) : (
             <h3>No data to display</h3>
           )}

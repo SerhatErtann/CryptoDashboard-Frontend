@@ -25,7 +25,11 @@ function CoinChart({ data }) {
         margin={{ top: 20, right: 30, left: 0, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="date" />
+        <XAxis
+  dataKey="date"
+  tickFormatter={(tick) => tick} 
+  interval="preserveStartEnd"
+/>
         <YAxis domain={["auto", "auto"]} />
         <Tooltip />
         <Line type="monotone" dataKey="price" stroke="#8884d8" dot={true} />
