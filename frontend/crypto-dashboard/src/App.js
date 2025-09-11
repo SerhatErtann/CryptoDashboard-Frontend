@@ -34,39 +34,28 @@ function App() {
   const [maxPrice, setMaxPrice] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
 
-  const handleStartDateChange = (date) => {
-  if (!date) return;
-  setStartDate(date);
-};
-
-const handleEndDateChange = (date) => {
-  if (!date) return;
-  setEndDate(date);
-};
   const getFilteredData = () => {
     if (!data[selectedCoin]) return [];
 
     return data[selectedCoin].filter((d) => {
-    const dt = new Date(d.date);
-    dt.setHours(0, 0, 0, 0); 
-    
+      const dt = new Date(d.date);
+      dt.setHours(0, 0, 0, 0);
 
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
-    if (start) start.setHours(0, 0, 0, 0);
-    if (end) end.setHours(0, 0, 0, 0);
+      const start = startDate ? new Date(startDate) : null;
+      const end = endDate ? new Date(endDate) : null;
+      if (start) start.setHours(0, 0, 0, 0);
+      if (end) end.setHours(0, 0, 0, 0);
 
-    const dateInRange =
-      (start ? dt >= start : true) &&
-      (end ? dt <= end : true);
+      const dateInRange =
+        (start ? dt >= start : true) && (end ? dt <= end : true);
 
-    const priceInRange =
-      (minPrice === null || d.price >= minPrice) &&
-      (maxPrice === null || d.price <= maxPrice);
+      const priceInRange =
+        (minPrice === null || d.price >= minPrice) &&
+        (maxPrice === null || d.price <= maxPrice);
 
-    return dateInRange && priceInRange;
-  });
-};
+      return dateInRange && priceInRange;
+    });
+  };
 
   const formatDate = (dateString) => {
     const d = new Date(dateString);
@@ -87,48 +76,50 @@ const handleEndDateChange = (date) => {
   };
 
   const coins = ["BTC", "ETH", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
-
-  const fetchCoinData = async (coin, period = "30") => {
-    try {
-      setLoading(true);
-      const res = await axios.get(
-        `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
-        {
-          params: {
-            coinName: coin,
-            period: period,
-            minPrice: minPrice || null,
-            maxPrice: maxPrice || null,
-            sortColumn: "date",
-            sortOrder: "asc",
-          },
-        }
-      );
-
-      const coinData = Array.isArray(res.data) ? res.data : [];
-      const formattedCoinData = coinData.map((d) => ({
-        ...d,
-        date: formatDate(d.date),
-      }));
-
-      setData((prev) => ({ ...prev, [coin]: formattedCoinData }));
-
-      if (formattedCoinData.length > 0) {
-        const dates = formattedCoinData.map((d) => new Date(d.date));
-        setStartDate(new Date(Math.min(...dates)));
-        setEndDate(new Date(Math.max(...dates)));
-        setStats(calculateStats(formattedCoinData));
-      } else {
-        setStats(null);
+  const fetchCoinData = async (coin, period = null, start = startDate, end = endDate) => {
+  console.log("Fetching data:", { coin, period, start, end, minPrice, maxPrice });
+  try {
+    setLoading(true);
+    const res = await axios.get(
+      `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
+      {
+        params: {
+          coinName: coin,
+          period: period,
+          startDate: start ? formatDate(start) : null,
+          endDate: end ? formatDate(end) : null,
+          minPrice: minPrice || null,
+          maxPrice: maxPrice || null,
+          sortColumn: "date",
+          sortOrder: "asc",
+        },
       }
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setData((prev) => ({ ...prev, [coin]: [] }));
+    );
+    console.log("API response:", res.data); 
+setFilteredData(res.data);
+
+    const coinData = Array.isArray(res.data) ? res.data : [];
+    const formattedCoinData = coinData.map((d) => ({
+      ...d,
+      date: formatDate(d.date),
+    }));
+
+    setData((prev) => ({ ...prev, [coin]: formattedCoinData }));
+
+    if (formattedCoinData.length > 0) {
+      setStats(calculateStats(formattedCoinData));
+    } else {
       setStats(null);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching data:", err);
+    setData((prev) => ({ ...prev, [coin]: [] }));
+    setStats(null);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const calculateStats = (coinData) => {
     if (!coinData || coinData.length === 0) return null;
@@ -152,10 +143,11 @@ const handleEndDateChange = (date) => {
   };
 
   useEffect(() => {
-    if (selectedCoin && data[selectedCoin]) {
-      setFilteredData(getFilteredData());
-    }
-  }, [startDate, endDate, data, selectedCoin]);
+  if (selectedCoin) {
+    fetchCoinData(selectedCoin, rangeDays, startDate, endDate);
+  }
+}, [selectedCoin, rangeDays, startDate, endDate, minPrice, maxPrice]);
+
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
@@ -232,18 +224,18 @@ const handleEndDateChange = (date) => {
             <div>
               <label>Start Date: </label>
               <DatePicker
-  selected={startDate}
-  onChange={(date) => setStartDate(date)}
-  dateFormat="yyyy-MM-dd"
-/>
+                selected={startDate}
+                onChange={(date) => setStartDate(date)}
+                dateFormat="yyyy-MM-dd"
+              />
             </div>
             <div>
               <label>End Date: </label>
               <DatePicker
-  selected={endDate}
-  onChange={(date) => setEndDate(date)}
-  dateFormat="yyyy-MM-dd"
-/>
+                selected={endDate}
+                onChange={(date) => setEndDate(date)}
+                dateFormat="yyyy-MM-dd"
+              />
             </div>
           </div>
 
@@ -253,7 +245,7 @@ const handleEndDateChange = (date) => {
               <input
                 type="number"
                 value={minPrice || ""}
-                onChange={(e) => setMinPrice(e.target.value)}
+                onChange={(e) => setMinPrice(Number(e.target.value))}
               />
             </div>
             <div>
@@ -261,7 +253,7 @@ const handleEndDateChange = (date) => {
               <input
                 type="number"
                 value={maxPrice || ""}
-                onChange={(e) => setMaxPrice(e.target.value)}
+                onChange={(e) => setMaxPrice(Number(e.target.value))}
               />
             </div>
           </div>
@@ -274,21 +266,35 @@ const handleEndDateChange = (date) => {
               alignItems: "center",
             }}
           >
-            {["7", "30", "90"].map((d) => (
-              <button
-                key={d}
-                onClick={() => setRangeDays(d)}
-                style={{
-                  padding: "5px 10px",
-                  backgroundColor: rangeDays === d ? "#8884d8" : "#fff",
-                  border: "1px solid #8884d8",
-                  borderRadius: "5px",
-                  cursor: "pointer",
-                }}
-              >
-                {d}
-              </button>
-            ))}
+            
+{["7","30","90"].map((d) => (
+  <button
+    key={d}
+    onClick={() => {
+      const days = Number(d);
+      const today = endDate ? new Date(endDate) : new Date();
+      const newStartDate = new Date(today);
+      newStartDate.setDate(today.getDate() - days);
+      setStartDate(newStartDate);
+      setRangeDays(d);
+
+      // Veri çek
+      if (selectedCoin) {
+        fetchCoinData(selectedCoin, d, newStartDate, today);
+      }
+    }}
+    style={{
+      padding: "5px 10px",
+      backgroundColor: rangeDays === d ? "#8884d8" : "#fff",
+      border: "1px solid #8884d8",
+      borderRadius: "5px",
+      cursor: "pointer",
+    }}
+  >
+    {d}
+  </button>
+))}
+
           </div>
 
           {stats && (
