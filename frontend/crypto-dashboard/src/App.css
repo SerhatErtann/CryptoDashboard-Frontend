@@ -5,11 +5,18 @@
 .App-logo {
   height: 40vmin;
   pointer-events: none;
+  border-radius: 50%;
+}
+.coin-Logos {
+  border-radius: 50%;
+  object-fit: cover;
+  background: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .App-logo {
     animation: App-logo-spin infinite 20s linear;
+    
   }
 }
 
@@ -36,3 +43,55 @@
     transform: rotate(360deg);
   }
 }
+.range-btn {
+  background-color: #fff;
+  border: 1px solid #8884d8;
+  border-radius: 5px;
+  padding: 10px 20px;       
+  cursor: pointer;
+  font-size: 14px;           
+  transition: all 0.2s ease;
+  
+}
+
+.range-btn:hover {
+  background-color: #d0d0ff; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  border-color: #8884d8;
+}
+
+.range-btn.selected {
+  background-color: #8884d8;
+  color: #fff;
+}
+
+.back-btn {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-color: #8884d8;
+  border-radius: 5px;
+  padding: 10px 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background-color: #f0f0f0;
+  border-color: #8884d8;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.interval-btn:hover {
+  border: 1px solid #4f58a9;
+  background-color: #f0f0f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.interval-btn {
+ border-radius: 15%;
+  padding: 10px;
+  border-color: #8884d8;
+  background-color: #fff;
+
+}
+

@@ -3,7 +3,7 @@ import axios from "axios";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import CoinChart from "./CoinChart";
-
+import './App.css';
 import btcLogo from "./assets/icons/btc.png";
 import ethLogo from "./assets/icons/etherium.png";
 import ltcLogo from "./assets/icons/litecoin.png";
@@ -20,9 +20,13 @@ const coinLogos = {
   ETC: etcLogo,
   ELROND: elrondLogo,
   AAVE: aaveLogo,
+
+
 };
 
 function App() {
+
+  
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(false);
   const [selectedCoin, setSelectedCoin] = useState(null);
@@ -33,6 +37,9 @@ function App() {
   const [minPrice, setMinPrice] = useState(null);
   const [maxPrice, setMaxPrice] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
+  const [timeInterval, setTimeInterval] = useState("daily");
+
+   const [HandlePeriodClick,period] = useState(null);
 
   const getFilteredData = () => {
     if (!data[selectedCoin]) return [];
@@ -77,49 +84,48 @@ function App() {
 
   const coins = ["BTC", "ETH", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
   const fetchCoinData = async (coin, period = null, start = startDate, end = endDate) => {
-  console.log("Fetching data:", { coin, period, start, end, minPrice, maxPrice });
-  try {
-    setLoading(true);
-    const res = await axios.get(
-      `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
-      {
-        params: {
-          coinName: coin,
-          period: period,
-          startDate: start ? formatDate(start) : null,
-          endDate: end ? formatDate(end) : null,
-          minPrice: minPrice || null,
-          maxPrice: maxPrice || null,
-          sortColumn: "date",
-          sortOrder: "asc",
-        },
+    console.log("Fetching data:", { coin, period, start, end, minPrice, maxPrice });
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `http://localhost:5224/api/CryptoDashboard/DataFiltered`,
+        {
+          params: {
+            coinName: coin,
+            period: period,
+            startDate: start ? formatDate(start) : null,
+            endDate: end ? formatDate(end) : null,
+            minPrice: minPrice || null,
+            maxPrice: maxPrice || null,
+            sortColumn: "date",
+            sortOrder: "asc",
+          },
+        }
+      );
+      console.log("API response:", res.data); 
+      setFilteredData(res.data);
+
+      const coinData = Array.isArray(res.data) ? res.data : [];
+      const formattedCoinData = coinData.map((d) => ({
+        ...d,
+        date: formatDate(d.date),
+      }));
+
+      setData((prev) => ({ ...prev, [coin]: formattedCoinData }));
+
+      if (formattedCoinData.length > 0) {
+        setStats(calculateStats(formattedCoinData));
+      } else {
+        setStats(null);
       }
-    );
-    console.log("API response:", res.data); 
-setFilteredData(res.data);
-
-    const coinData = Array.isArray(res.data) ? res.data : [];
-    const formattedCoinData = coinData.map((d) => ({
-      ...d,
-      date: formatDate(d.date),
-    }));
-
-    setData((prev) => ({ ...prev, [coin]: formattedCoinData }));
-
-    if (formattedCoinData.length > 0) {
-      setStats(calculateStats(formattedCoinData));
-    } else {
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setData((prev) => ({ ...prev, [coin]: [] }));
       setStats(null);
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error("Error fetching data:", err);
-    setData((prev) => ({ ...prev, [coin]: [] }));
-    setStats(null);
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   const calculateStats = (coinData) => {
     if (!coinData || coinData.length === 0) return null;
@@ -143,11 +149,10 @@ setFilteredData(res.data);
   };
 
   useEffect(() => {
-  if (selectedCoin) {
-    fetchCoinData(selectedCoin, rangeDays, startDate, endDate);
-  }
-}, [selectedCoin, rangeDays, startDate, endDate, minPrice, maxPrice]);
-
+    if (selectedCoin) {
+      fetchCoinData(selectedCoin, rangeDays, startDate, endDate);
+    }
+  }, [selectedCoin, rangeDays, startDate, endDate, minPrice, maxPrice]);
 
   return (
     <div style={{ padding: "20px", fontFamily: "Arial" }}>
@@ -212,6 +217,7 @@ setFilteredData(res.data);
               borderRadius: "5px",
               cursor: "pointer",
             }}
+            className="back-btn"
           >
             Back
           </button>
@@ -219,7 +225,7 @@ setFilteredData(res.data);
           <h2>{selectedCoin} Details</h2>
 
           <div
-            style={{ marginBottom: "20px", display: "flex", gap: "20px" }}
+            style={{ marginBottom: "20px", display: "flex", gap: "20px",fontFamily: "Cursive",fontSize: "20px" }}
           >
             <div>
               <label>Start Date: </label>
@@ -239,9 +245,9 @@ setFilteredData(res.data);
             </div>
           </div>
 
-          <div style={{ marginBottom: "20px", display: "flex", gap: "20px" }}>
+          <div style={{ marginBottom: "50px", display: "flex", gap: "20px",fontFamily: "Cursive",fontSize: "20px" }}>
             <div>
-              <label>Min Price: </label>
+              <label>  Min Price : </label>
               <input
                 type="number"
                 value={minPrice || ""}
@@ -249,7 +255,7 @@ setFilteredData(res.data);
               />
             </div>
             <div>
-              <label>Max Price: </label>
+              <label> Max Price   : </label>
               <input
                 type="number"
                 value={maxPrice || ""}
@@ -257,58 +263,64 @@ setFilteredData(res.data);
               />
             </div>
           </div>
-
-          <div
-            style={{
-              marginBottom: "20px",
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-            }}
-          >
-            
-{["7","30","90"].map((d) => (
-  <button
-    key={d}
-    onClick={() => {
-      const days = Number(d);
-      const today = endDate ? new Date(endDate) : new Date();
-      const newStartDate = new Date(today);
-      newStartDate.setDate(today.getDate() - days);
-      setStartDate(newStartDate);
-      setRangeDays(d);
-
-      // Veri çek
-      if (selectedCoin) {
-        fetchCoinData(selectedCoin, d, newStartDate, today);
-      }
-    }}
-    style={{
-      padding: "5px 10px",
-      backgroundColor: rangeDays === d ? "#8884d8" : "#fff",
-      border: "1px solid #8884d8",
-      borderRadius: "5px",
-      cursor: "pointer",
-    }}
-  >
-    {d}
-  </button>
-))}
-
-          </div>
-
+              
           {stats && (
-            <div style={{ marginBottom: "20px" }}>
-              <p>En yüksek ortalama fark: {stats.averageDiff.toFixed(2)}</p>
-              <p>En düşük fiyat: {stats.lowestPrice}</p>
-              <p>En yüksek fiyat: {stats.highestPrice}</p>
+            
+            <div style={{ marginBottom: "50px" ,fontFamily: "Cursive",fontSize: "20px"}}>
+              
+              <p>Highest average difference: {stats.averageDiff.toFixed(2)}</p>
+              <p>Lowest price:    {stats.lowestPrice}</p>
+              <p>highest price:   {stats.highestPrice}</p>
             </div>
           )}
+          
+          <div style={{ marginBottom: "20px", display: "flex", gap: "10px", justifyContent: "left" }}>
+            {["7","30","90"].map((d) => (
+              <button
+                key={d}
+                onClick={() => {
+                  const days = Number(d);
+                  const today = endDate ? new Date(endDate) : new Date();
+                  const newStartDate = new Date(today);
+                  newStartDate.setDate(today.getDate() - days);
+                  setStartDate(newStartDate);
+                  setRangeDays(d);
+
+                  if (selectedCoin) {
+                    fetchCoinData(selectedCoin, d, newStartDate, today);
+                  }
+                }}
+                className={`range-btn ${rangeDays === d ? 'selected' : ''}`}
+              >
+                {`${d} Day`}
+              </button>
+            ))}
+          </div>
 
           {loading ? (
             <h3>Loading...</h3>
           ) : data[selectedCoin] && data[selectedCoin].length > 0 ? (
-            <CoinChart data={filteredData} />
+            <>
+          
+              <CoinChart data={filteredData} />
+              <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
+                {["daily", "weekly", "monthly"].map((interval) => (
+                  <button
+                    key={interval}
+                    onClick={() =>
+                                  {
+                                    setTimeInterval(interval);
+                                    fetchCoinData(interval)
+                                  }
+                                    
+                            } 
+                    className={`interval-btn ${timeInterval === interval ? 'selected' : ''}`}
+                  >
+                    {interval.charAt(0).toUpperCase() + interval.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </>
           ) : (
             <h3>No data to display</h3>
           )}
@@ -317,5 +329,4 @@ setFilteredData(res.data);
     </div>
   );
 }
-
 export default App;
