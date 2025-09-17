@@ -39,10 +39,9 @@ function App() {
   const [filteredData, setFilteredData] = useState([]);
   const [timeInterval, setTimeInterval] = useState("daily");
 
-   const [HandlePeriodClick,period] = useState(null);
-
   const getFilteredData = () => {
     if (!data[selectedCoin]) return [];
+
 
     return data[selectedCoin].filter((d) => {
       const dt = new Date(d.date);
@@ -301,7 +300,6 @@ function App() {
             <h3>Loading...</h3>
           ) : data[selectedCoin] && data[selectedCoin].length > 0 ? (
             <>
-          
               <CoinChart data={filteredData} />
               <div style={{ marginTop: "20px", display: "flex", gap: "10px" }}>
                 {["daily", "weekly", "monthly"].map((interval) => (
@@ -310,7 +308,7 @@ function App() {
                     onClick={() =>
                                   {
                                     setTimeInterval(interval);
-                                    fetchCoinData(interval)
+                                    fetchCoinData(selectedCoin,interval,startDate,endDate)
                                   }
                                     
                             } 
