@@ -38,6 +38,7 @@ function App() {
   const [maxPrice, setMaxPrice] = useState(null);
   const [filteredData, setFilteredData] = useState([]);
   const [timeInterval, setTimeInterval] = useState("daily");
+  
 
   const getFilteredData = () => {
     if (!data[selectedCoin]) return [];
@@ -297,7 +298,7 @@ function App() {
           </div>
 
           {loading ? (
-            <h3>Loading...</h3>
+            <h1>Loading...</h1>
           ) : data[selectedCoin] && data[selectedCoin].length > 0 ? (
             <>
               <CoinChart data={filteredData} />
