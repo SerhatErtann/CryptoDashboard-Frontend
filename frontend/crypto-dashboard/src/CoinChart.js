@@ -31,7 +31,7 @@ function CoinChart({ data }) {
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis
           dataKey="date"
-          tick={{ angle: angle, textAnchor: angle === 0 ? "middle" : "end", fontSize: 12 }}
+          tick={{ angle: angle, textAnchor: angle === 0 ? "middle" : "end", fontSize: 15 }}
           interval="preserveStartEnd"
         />
         <YAxis domain={["auto", "auto"]} />
