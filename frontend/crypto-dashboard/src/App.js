@@ -14,14 +14,12 @@ import aaveLogo from "./assets/icons/aave.jpeg";
 
 const coinLogos = {
   BTC: btcLogo,
-  ETH: ethLogo,
+  ETHEREUM: ethLogo,
   LITECOIN: ltcLogo,
   SOLANA: solLogo,
   ETC: etcLogo,
   ELROND: elrondLogo,
   AAVE: aaveLogo,
-
-
 };
 
 function App() {
@@ -74,7 +72,7 @@ function App() {
 
   const coinColors = {
     BTC: "#f7931a33",
-    ETH: "#3c3c3d33",
+    ETHEREUM: "#3c3c3d33",
     LITECOIN: "#bebebe33",
     SOLANA: "#00FFA333",
     ETC: "#6993ff33",
@@ -82,9 +80,9 @@ function App() {
     AAVE: "#b6509e33",
   };
 
-  const coins = ["BTC", "ETH", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
-  const fetchCoinData = async (coin, period = null, start = startDate, end = endDate) => {
-    console.log("Fetching data:", { coin, period, start, end, minPrice, maxPrice });
+  const coins = ["BTC", "ETHEREUM", "LITECOIN", "SOLANA", "ETC", "ELROND", "AAVE"];
+  const fetchCoinData = async (coin, period = null, start = startDate, end = endDate, range = null) => {
+    /*console.log("Fetching data:", { coin, period, start, end, minPrice, maxPrice});*/
     try {
       setLoading(true);
       const res = await axios.get(
@@ -92,9 +90,10 @@ function App() {
         {
           params: {
             coinName: coin,
-            period: period,
+            period: period,       
             startDate: start ? formatDate(start) : null,
             endDate: end ? formatDate(end) : null,
+            range: range,       
             minPrice: minPrice || null,
             maxPrice: maxPrice || null,
             sortColumn: "date",
@@ -287,7 +286,7 @@ function App() {
                   setRangeDays(d);
 
                   if (selectedCoin) {
-                    fetchCoinData(selectedCoin, d, newStartDate, today);
+                    fetchCoinData(selectedCoin, null, newStartDate, today,days);
                   }
                 }}
                 className={`range-btn ${rangeDays === d ? 'selected' : ''}`}
